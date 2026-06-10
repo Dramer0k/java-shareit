@@ -32,10 +32,6 @@ public class ItemServiceImpl implements ItemService {
             throw new IncorrectParamsException("Description - обязательное поле");
         }
 
-        if (item.getName() == null || item.getName().isBlank()) {
-            throw new IncorrectParamsException("Name - обязательное поле");
-        }
-
         if ((item.getAvailable() == null)) {
             throw new IncorrectParamsException("Available - обязательное поле");
         }
