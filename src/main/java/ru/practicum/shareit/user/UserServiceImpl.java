@@ -24,10 +24,10 @@ public class UserServiceImpl implements UserService {
     public User addUser(User user) {
         log.info("Создаем пользователя...");
         log.info("Входные данные: {}", user);
-        validationUsedEmail(user);
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new IncorrectParamsException("Не указана почта пользователя!");
-        }
+
+        checkEmailUsage(user);
+        checkAvailabilityEmail(user);
+
         return userRepository.addUser(user);
     }
 
@@ -39,22 +39,26 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User updateUser(Long userId, User user) {
-        if (userRepository.getUserById(userId) == null) {
-            throw new NotFoundException("Пользователь с id" + userId + " не найден!");
-        }
+        getUserById(userId);
 
         log.info("Обновляем данные пользователя {}", userId);
         log.info("Необходимо внести изменения: {}", user);
 
-        validationUsedEmail(user);
+        checkEmailUsage(user);
 
         return userRepository.updateUser(userId, user);
     }
 
-    public void validationUsedEmail(User user) {
+    private void checkEmailUsage(User user) {
         log.info("Проверка наличия пользователя с Email: {}...", user.getEmail());
         if (userRepository.getUserByEmail(user.getEmail()) != null) {
             throw new AlreadyUsedException("Пользователь с таким имейлом уже существует!");
+        }
+    }
+
+    private void checkAvailabilityEmail(User user) {
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new IncorrectParamsException("Не указана почта пользователя!");
         }
     }
 

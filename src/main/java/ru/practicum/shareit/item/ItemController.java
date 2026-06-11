@@ -1,6 +1,5 @@
 package ru.practicum.shareit.item;
 
-import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -16,16 +15,17 @@ import java.util.List;
 @AllArgsConstructor
 public class ItemController {
     private ItemService itemService;
+    public static final String USER_ID = "X-Sharer-User-Id";
 
     @PostMapping
-    public ItemDto addItem(@RequestHeader("X-Sharer-User-Id") Long userId,
-                           @Valid @RequestBody ItemDto itemDto) {
+    public ItemDto addItem(@RequestHeader(USER_ID) Long userId,
+                           @RequestBody ItemDto itemDto) {
         Item item = itemService.addItem(userId, ItemMapper.toItem(itemDto));
         return ItemMapper.toItemDto(item);
     }
 
     @PatchMapping("/{itemId}")
-    public ItemDto updateItem(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public ItemDto updateItem(@RequestHeader(USER_ID) Long userId,
                               @PathVariable Long itemId,
                               @RequestBody ItemDto itemDto) {
         Item item = itemService.updateItem(userId, itemId, ItemMapper.toItem(itemDto));
@@ -39,7 +39,7 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<Item> getItems(@RequestHeader("X-Sharer-User-Id") Long userId) {
+    public List<Item> getItems(@RequestHeader(USER_ID) Long userId) {
         return itemService.getItems(userId);
     }
 

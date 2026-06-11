@@ -32,6 +32,7 @@ public class ItemRepositoryImpl implements ItemRepository {
     @Override
     public List<Item> getItems(Long userID) {
         return items.values().stream()
+                .filter(item -> item.getOwner() != null && item.getOwner().getId() != null)
                 .filter(item -> item.getOwner().getId().equals(userID))
                 .sorted(Comparator.comparing(Item::getId))
                 .collect(Collectors.toList());
@@ -44,6 +45,7 @@ public class ItemRepositoryImpl implements ItemRepository {
         }
 
         return items.values().stream()
+                .filter(item -> item.getName() != null && item.getDescription() != null)
                 .filter(item -> item.getName().toLowerCase().contains(text.toLowerCase()) ||
                         item.getDescription().toLowerCase().contains(text.toLowerCase()))
                 .filter(item -> Boolean.TRUE.equals(item.getAvailable()))
