@@ -1,4 +1,4 @@
-package ru.practicum.shareit.user;
+package ru.practicum.shareit.user.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.AlreadyUsedException;
 import ru.practicum.shareit.exception.IncorrectParamsException;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.List;
 
@@ -17,7 +19,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getUsers() {
-        return userRepository.getUsers();
+        return userRepository.findAll();
     }
 
     @Override
@@ -28,30 +30,36 @@ public class UserServiceImpl implements UserService {
         checkEmailUsage(user);
         checkAvailabilityEmail(user);
 
-        return userRepository.addUser(user);
+        return userRepository.save(user);
     }
 
     @Override
     public void deleteUser(Long userId) {
         log.info("Удаляем пользователя с id {}", userId);
-        userRepository.deleteUser(userId);
+        userRepository.deleteById(userId);
     }
 
     @Override
     public User updateUser(Long userId, User user) {
-        getUserById(userId);
+        User oldUser = getUserById(userId);
 
         log.info("Обновляем данные пользователя {}", userId);
         log.info("Необходимо внести изменения: {}", user);
 
         checkEmailUsage(user);
 
-        return userRepository.updateUser(userId, user);
+        updateUser(oldUser, user);
+
+        return userRepository.save(oldUser);
+    }
+
+    public User getUserById(Long userId) {
+        return  userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден!"));
     }
 
     private void checkEmailUsage(User user) {
         log.info("Проверка наличия пользователя с Email: {}...", user.getEmail());
-        if (userRepository.getUserByEmail(user.getEmail()) != null) {
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new AlreadyUsedException("Пользователь с таким имейлом уже существует!");
         }
     }
@@ -62,7 +70,13 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    public User getUserById(Long userId) {
-        return userRepository.getUserById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден!"));
+    public void updateUser(User user1, User user2) {
+        if (user2.getName() != null && !user2.getName().isBlank()) {
+            user1.setName(user2.getName());
+        }
+
+        if ((user2.getEmail() != null && !user2.getEmail().isBlank())) {
+            user1.setEmail(user2.getEmail());
+        }
     }
 }
