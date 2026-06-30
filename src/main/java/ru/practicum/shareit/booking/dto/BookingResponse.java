@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class BookingResponse {
     @NotNull(groups = OnCreate.class)
-    private Long Id;
+    private Long id;
 
     @NotNull(groups = OnCreate.class)
     private LocalDateTime start;
