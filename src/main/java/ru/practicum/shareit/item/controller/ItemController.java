@@ -67,6 +67,4 @@ public class ItemController {
         return itemService.setComment(userId, itemId, commentRequest);
 
     }
-
-
 }

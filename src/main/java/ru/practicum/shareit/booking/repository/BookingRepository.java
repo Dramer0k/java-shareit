@@ -38,7 +38,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             SELECT
                 it.id AS id,
                 MIN(CASE WHEN b.start_date >= NOW() THEN b.start_date END) AS nextBooking,
-                MAX(CASE WHEN b.end_date < NOW() - 10 SECOND THEN b.end_date END) AS lastBooking
+                MAX(CASE WHEN b.end_date < NOW() - INTERVAL '10' SECOND THEN b.end_date END) AS lastBooking
             FROM items it
             LEFT JOIN bookings b ON it.id = b.item_id
             WHERE it.owner_id = ?1
@@ -52,7 +52,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             SELECT
                 it.id AS id,
                 MIN(CASE WHEN b.start_date >= NOW() THEN b.start_date END) AS nextBooking,
-                MAX(CASE WHEN b.end_date < NOW() - 10 SECOND THEN b.end_date END) AS lastBooking
+                MAX(CASE WHEN b.end_date < NOW() - INTERVAL '10' SECOND THEN b.end_date END) AS lastBooking
             FROM items it
             LEFT JOIN bookings b ON it.id = b.item_id
             WHERE it.id = ?1

@@ -90,11 +90,11 @@ public class ItemServiceImpl implements ItemService {
         Item item = itemRepository.findById(itemId).orElseThrow(() -> new NotFoundException("Предмет не найден"));
 
         ItemBookingDataProjection itemBookingDataProjection = bookingRepository.findBookingDateByItem(itemId);
-        ItemBookingData itemBookingData = new ItemBookingData(
-                itemBookingDataProjection.getId(),
-                itemBookingDataProjection.getNextBooking(),
-                itemBookingDataProjection.getLastBooking()
-        );
+        ItemBookingData itemBookingData = new ItemBookingData();
+        itemBookingData.setId(itemBookingDataProjection.getId());
+        itemBookingData.setNext(itemBookingDataProjection.getNextBooking());
+        itemBookingData.setLast(itemBookingDataProjection.getLastBooking());
+
         List<CommentResponse> comments = commentRepository.findAllByItemId(itemId)
                 .stream()
                 .map(CommentMapper::toResponse)
@@ -108,16 +108,17 @@ public class ItemServiceImpl implements ItemService {
 
         List<ItemBookingData> bookingList = bookingRepository.findItemBookingDataByOwnerId(userId)
                 .stream()
-                .map(projection -> new ItemBookingData(
-                        projection.getId(),
-                        projection.getNextBooking(),
-                        projection.getLastBooking()
-                ))
-                .toList();
+                .map(projection -> {
+                    ItemBookingData itemBookingData = new ItemBookingData();
 
-        log.info("id: {}", bookingList.getFirst().getId());
-        log.info("next: {}", bookingList.getFirst().getNext());
-        log.info("last: {}", bookingList.getFirst().getLast());
+                    itemBookingData.setId(projection.getId());
+                    itemBookingData.setLast(projection.getLastBooking());
+                    itemBookingData.setNext(projection.getNextBooking());
+
+                    return itemBookingData;
+                        }
+                )
+                .toList();
 
         return bookingList.stream()
                 .map(brookingData -> {
@@ -144,9 +145,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public CommentResponse setComment(Long userId, Long itemId, CommentRequest comment) {
-        log.info("Создаем коммент...");
         Item item = getItem(itemId);
-        log.info("Item: {}", item);
 
         List<Booking> bookings = bookingRepository
                 .findAllByItemIdAndBookerIdEqualsAndEndIsBefore(
@@ -154,7 +153,6 @@ public class ItemServiceImpl implements ItemService {
                         userId,
                         LocalDateTime.now()
                 );
-        log.info("List<Booking> bookings: {}", bookings);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
@@ -163,8 +161,6 @@ public class ItemServiceImpl implements ItemService {
         if (bookings.isEmpty()) {
             throw new IncorrectParamsException("Вы не арендовали эту вещь ранее или аренда еще не завершена");
         }
-
-        log.info("Сохраняем коммент...");
 
         Comment result = commentRepository.save(CommentMapper.toComment(user, item, comment));
 
