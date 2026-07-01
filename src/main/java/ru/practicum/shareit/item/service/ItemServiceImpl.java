@@ -39,23 +39,27 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public Item addItem(Long userId, Item item) {
-            User owner = getUser(userId);
-            item.setOwner(owner);
+        log.info("Создаем предмет...");
 
-            if (item.getName() == null || item.getName().isBlank()) {
-                throw new IncorrectParamsException("Name - обязательное поле");
-            }
+        User owner = getUser(userId);
+        item.setOwner(owner);
 
-            if (item.getDescription() == null || item.getDescription().isBlank()) {
-                throw new IncorrectParamsException("Description - обязательное поле");
-            }
-
-            if ((item.getAvailable() == null)) {
-                throw new IncorrectParamsException("Available - обязательное поле");
-            }
-
-            return itemRepository.save(item);
+        if (item.getName() == null || item.getName().isBlank()) {
+            throw new IncorrectParamsException("Name - обязательное поле");
         }
+
+        if (item.getDescription() == null || item.getDescription().isBlank()) {
+            throw new IncorrectParamsException("Description - обязательное поле");
+        }
+
+        if ((item.getAvailable() == null)) {
+            throw new IncorrectParamsException("Available - обязательное поле");
+        }
+
+        log.info("Item: {}", item);
+
+        return itemRepository.save(item);
+    }
 
     @Override
     public Item updateItem(Long userId, Long itemId, Item item) {
@@ -84,6 +88,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ResponseWithComment getItemById(Long itemId) {
         Item item = itemRepository.findById(itemId).orElseThrow(() -> new NotFoundException("Предмет не найден"));
+
         ItemBookingDataProjection itemBookingDataProjection = bookingRepository.findBookingDateByItem(itemId);
         ItemBookingData itemBookingData = new ItemBookingData(
                 itemBookingDataProjection.getId(),
@@ -100,6 +105,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ResponseWithBookingData> getItems(Long userId) {
+
         List<ItemBookingData> bookingList = bookingRepository.findItemBookingDataByOwnerId(userId)
                 .stream()
                 .map(projection -> new ItemBookingData(
@@ -108,6 +114,10 @@ public class ItemServiceImpl implements ItemService {
                         projection.getLastBooking()
                 ))
                 .toList();
+
+        log.info("id: {}", bookingList.getFirst().getId());
+        log.info("next: {}", bookingList.getFirst().getNext());
+        log.info("last: {}", bookingList.getFirst().getLast());
 
         return bookingList.stream()
                 .map(brookingData -> {

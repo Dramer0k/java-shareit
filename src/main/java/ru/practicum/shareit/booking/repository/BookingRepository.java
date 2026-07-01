@@ -14,7 +14,7 @@ import java.util.List;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("SELECT b FROM Booking b JOIN FETCH b.item WHERE b.booker.id = ?1")
-    List<Booking> findAllByBookerId(Long userId);
+    List<Booking> findAllBookingByBookerId(Long userId);
 
     List<Booking> findAllByBookerIdAndEndBeforeOrderByStartAsc(Long userId, Instant now);
 

@@ -38,8 +38,8 @@ public class ItemMapper {
                 item.getAvailable(),
                 item.getOwner() != null ? item.getOwner().getId() : null,
                 item.getRequest() != null ? item.getRequest().getId() : null,
-                itemBrookingData.getNextBooking(),
-                itemBrookingData.getLastBooking());
+                itemBrookingData.getNext(),
+                itemBrookingData.getLast());
     }
 
     public static ResponseWithComment toResponseWithComment(Item item,
@@ -52,8 +52,8 @@ public class ItemMapper {
                 item.getAvailable(),
                 item.getOwner() != null ? item.getOwner().getId() : null,
                 item.getRequest() != null ? item.getRequest().getId() : null,
-                itemBrookingData.getNextBooking(),
-                itemBrookingData.getLastBooking(),
+                itemBrookingData.getNext(),
+                itemBrookingData.getLast(),
                 comments);
     }
 }

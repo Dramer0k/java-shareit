@@ -30,7 +30,6 @@ import java.util.Objects;
 @AllArgsConstructor
 public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
-    private final BookingMapper bookingMapper;
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
 
@@ -194,8 +193,16 @@ public class BookingServiceImpl implements BookingService {
 
     }
 
+    @Override
+    public List<BookingResponse> getAllBookings() {
+        List<Booking> list = bookingRepository.findAll();
+        return list.stream()
+                .map(BookingMapper::toResponse)
+                .toList();
+    }
+
     public List<BookingResponse> getALlBookingsById(Long userId) {
-        return bookingRepository.findAllByBookerId(userId).stream()
+        return bookingRepository.findAllBookingByBookerId(userId).stream()
                 .map(BookingMapper::toResponse).toList();
     }
 

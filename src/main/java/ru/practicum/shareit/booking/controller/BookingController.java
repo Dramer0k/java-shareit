@@ -47,7 +47,6 @@ public class BookingController {
     public BookingResponse addBooking(
             @RequestHeader(X_SHARER_USER_ID) Long userId,
             @RequestBody @Validated(value = OnCreate.class) BookingRequest bookingRequest) {
-        log.info("Get /bookings");
         return bookingService.create(userId, bookingRequest);
     }
 
@@ -63,6 +62,10 @@ public class BookingController {
         return bookingService.changeStatus(userId, bookingId, approved);
     }
 
+    @GetMapping("/all")
+    public List<BookingResponse> getAllBookings() {
+        return bookingService.getAllBookings();
+    }
 
 
 }

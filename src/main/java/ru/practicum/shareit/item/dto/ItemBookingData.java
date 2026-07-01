@@ -9,6 +9,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ItemBookingData {
     private Long id;
-    private LocalDateTime nextBooking;
-    private LocalDateTime lastBooking;
+    private LocalDateTime next;
+    private LocalDateTime last;
 }
