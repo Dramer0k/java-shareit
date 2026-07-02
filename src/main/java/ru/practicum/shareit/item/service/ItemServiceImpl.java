@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.IncorrectParamsException;
 import ru.practicum.shareit.exception.NotEnoughPermitionException;
@@ -13,10 +14,7 @@ import ru.practicum.shareit.item.comments.model.dto.CommentRequest;
 import ru.practicum.shareit.item.comments.model.dto.CommentResponse;
 import ru.practicum.shareit.item.comments.model.mapper.CommentMapper;
 import ru.practicum.shareit.item.comments.repository.CommentRepository;
-import ru.practicum.shareit.item.dto.ItemBookingData;
-import ru.practicum.shareit.item.dto.ItemBookingDataProjection;
-import ru.practicum.shareit.item.dto.ResponseWithBookingData;
-import ru.practicum.shareit.item.dto.ResponseWithComment;
+import ru.practicum.shareit.item.dto.*;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
@@ -26,6 +24,7 @@ import ru.practicum.shareit.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -43,18 +42,6 @@ public class ItemServiceImpl implements ItemService {
 
         User owner = getUser(userId);
         item.setOwner(owner);
-
-        if (item.getName() == null || item.getName().isBlank()) {
-            throw new IncorrectParamsException("Name - обязательное поле");
-        }
-
-        if (item.getDescription() == null || item.getDescription().isBlank()) {
-            throw new IncorrectParamsException("Description - обязательное поле");
-        }
-
-        if ((item.getAvailable() == null)) {
-            throw new IncorrectParamsException("Available - обязательное поле");
-        }
 
         log.info("Item: {}", item);
 
@@ -78,7 +65,7 @@ public class ItemServiceImpl implements ItemService {
                 oldItem.setDescription(item.getDescription());
             }
 
-            if (item.getAvailable() != oldItem.getAvailable()) {
+            if (item.getAvailable() != null) {
                 oldItem.setAvailable(item.getAvailable());
             }
 
@@ -120,27 +107,44 @@ public class ItemServiceImpl implements ItemService {
                 )
                 .toList();
 
+        List<Long> itemIds = bookingList.stream()
+                .map(ItemBookingData::getId)
+                .collect(Collectors.toList());
+
+
+        List<Item> items = itemRepository.findByIdIn(itemIds);
+
+        Map<Long, Item> itemMap = items.stream()
+                .collect(Collectors.toMap(Item::getId, item -> item));
+
+
         return bookingList.stream()
                 .map(brookingData -> {
-                    Item item = itemRepository.findById(brookingData.getId())
-                            .orElseThrow(() -> new NotFoundException("Такой вещи не существует!"));
+                    Item item = itemMap.get(brookingData.getId());
+                    if (item == null) {
+                        throw new NotFoundException("Такой вещи не существует!");
+                    }
                     return ItemMapper.toItemBookingData(item, brookingData);
                 })
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<Item> searchItems(String text) {
+    public List<ItemDto> searchItems(String text) {
         if (text.isBlank()) {
             return new ArrayList<>();
         }
         log.info("Начался поиск по тексту: {}", text);
-        return itemRepository.search(text);
+        return itemRepository.search(text).stream()
+                .map(ItemMapper::toDto)
+                .toList();
     }
 
     @Override
-    public List<Item> getAllItems() {
-        return itemRepository.findAll();
+    public List<ItemDto> getAllItems() {
+        return itemRepository.findAll().stream()
+                .map(ItemMapper::toDto)
+                .toList();
     }
 
     @Override
@@ -148,10 +152,11 @@ public class ItemServiceImpl implements ItemService {
         Item item = getItem(itemId);
 
         List<Booking> bookings = bookingRepository
-                .findAllByItemIdAndBookerIdEqualsAndEndIsBefore(
+                .findAllByItemIdAndBookerIdEqualsAndEndIsBeforeAndStatusEquals(
                         itemId,
                         userId,
-                        LocalDateTime.now()
+                        LocalDateTime.now(),
+                        BookingStatus.APPROVED
                 );
 
         User user = userRepository.findById(userId)

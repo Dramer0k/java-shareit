@@ -1,10 +1,10 @@
 package ru.practicum.shareit.item.comments.model.dto;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class CommentRequest {
-    @NotNull
+    @NotBlank
     private String text;
 }

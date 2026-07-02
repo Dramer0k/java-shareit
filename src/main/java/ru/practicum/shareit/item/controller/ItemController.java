@@ -3,6 +3,7 @@ package ru.practicum.shareit.item.controller;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.comments.model.dto.CommentRequest;
 import ru.practicum.shareit.item.comments.model.dto.CommentResponse;
@@ -12,6 +13,7 @@ import ru.practicum.shareit.item.dto.ResponseWithComment;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
+import ru.practicum.shareit.validation.OnCreate;
 
 import java.util.List;
 
@@ -25,7 +27,7 @@ public class ItemController {
 
     @PostMapping
     public ItemDto addItem(@RequestHeader(USER_ID) Long userId,
-                           @RequestBody ItemDto itemDto) {
+                           @RequestBody @Validated(value = OnCreate.class) ItemDto itemDto) {
         Item item = itemService.addItem(userId, ItemMapper.toItem(itemDto));
         return ItemMapper.toDto(item);
     }
@@ -49,12 +51,12 @@ public class ItemController {
     }
 
     @GetMapping("/all")
-    public List<Item> getAllItems() {
+    public List<ItemDto> getAllItems() {
         return itemService.getAllItems();
     }
 
     @GetMapping("/search")
-    public List<Item> getItemsByText(@RequestParam(defaultValue = "") String text) {
+    public List<ItemDto> getItemsByText(@RequestParam(defaultValue = "") String text) {
         return itemService.searchItems(text);
     }
 

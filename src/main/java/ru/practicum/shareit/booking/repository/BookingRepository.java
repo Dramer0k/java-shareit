@@ -2,7 +2,6 @@ package ru.practicum.shareit.booking.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import ru.practicum.shareit.booking.dto.BookingResponse;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.item.dto.ItemBookingDataProjection;
@@ -24,7 +23,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findAllByBookerIdAndStatusOrderByStartAsc(Long userId, BookingStatus bookingStatus);
 
-    List<BookingResponse> findAllByItemOwnerId(Long userId);
+    List<Booking> findAllByItemOwnerId(Long userId);
 
     List<Booking> findAllByItemOwnerIdAndEndBeforeOrderByStartAsc(Long userId, Instant now);
 
@@ -46,7 +45,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     List<ItemBookingDataProjection> findItemBookingDataByOwnerId(Long ownerId);
 
-    List<Booking> findAllByItemIdAndBookerIdEqualsAndEndIsBefore(Long itemId, Long userId, LocalDateTime now);
+    List<Booking> findAllByItemIdAndBookerIdEqualsAndEndIsBeforeAndStatusEquals(Long itemId, Long userId, LocalDateTime now, BookingStatus status);
 
     @Query(nativeQuery = true, value = """
             SELECT

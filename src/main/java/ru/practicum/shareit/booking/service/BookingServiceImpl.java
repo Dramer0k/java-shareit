@@ -207,6 +207,10 @@ public class BookingServiceImpl implements BookingService {
     }
 
     public List<BookingResponse> getALlByOwnerId(Long userId) {
-        return bookingRepository.findAllByItemOwnerId(userId);
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+        return bookingRepository.findAllByItemOwnerId(userId).stream()
+                .map(BookingMapper::toResponse)
+                .toList();
     }
 }
