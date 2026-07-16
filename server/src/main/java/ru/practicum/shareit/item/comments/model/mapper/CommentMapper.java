@@ -21,11 +21,14 @@ public class CommentMapper {
     }
 
     public static CommentResponse toResponse(Comment comment) {
+        Long itemId = comment.getItem() == null ? null : comment.getItem().getId();
+        String user = comment.getAuthor() == null ? null : comment.getAuthor().getName();
+
         return new CommentResponse(
                 comment.getId(),
-                comment.getItem().getId(),
+                itemId,
                 comment.getText(),
-                comment.getAuthor().getName(),
+                user,
                 comment.getCreated()
         );
     }

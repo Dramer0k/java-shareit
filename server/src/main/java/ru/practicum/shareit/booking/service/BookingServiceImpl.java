@@ -35,19 +35,11 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingResponse create(Long userId, BookingRequest bookingRequest) {
-
-        log.info("Id юзера: {}", userId);
-        log.info("Параметры: {}", bookingRequest);
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
 
-        log.info("Пользователь: {}", user);
-
         Item item = itemRepository.findById(bookingRequest.getItemId())
                 .orElseThrow(() -> new NotFoundException("Предмет не найден"));
-
-        log.info("Предмет: {}", item);
 
         if (item.getAvailable() == false) {
             throw new IncorrectParamsException("Заявку на этот предмет создать нельзя, статус");
@@ -78,11 +70,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setEnd(end);
         booking.setStatus(BookingStatus.WAITING);
 
-        log.info("Добавляем: {}", booking);
-
         bookingRepository.save(booking);
-
-        log.info("Добавлен предмет: {}", booking);
 
         BookingResponse bd = BookingMapper.toResponse(booking);
 
@@ -94,9 +82,16 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
-        if (!booking.getBooker().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
-            log.info("userId: {}", userId);
-            log.info("booking: {}", booking);
+        boolean isBooker = (booking.getBooker() != null)
+                && (booking.getBooker().getId() != null)
+                && booking.getBooker().getId().equals(userId);
+
+        boolean isOwner = (booking.getItem() != null)
+                && (booking.getItem().getOwner() != null)
+                && (booking.getItem().getOwner().getId() != null)
+                && booking.getItem().getOwner().getId().equals(userId);
+
+        if (!isBooker && !isOwner) {
             throw new NotEnoughPermitionException("Недостаточно прав для изменения статуса");
         }
 
@@ -124,10 +119,6 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<BookingResponse> getBooking(Long userId, BookingState state) {
-        log.info("Id юзера: {}", userId);
-        log.info("Статус: {}", state);
-
-
         List<Booking> result;
         switch (state) {
             case ALL -> {

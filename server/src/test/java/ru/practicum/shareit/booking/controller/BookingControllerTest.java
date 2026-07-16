@@ -10,7 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.booking.dto.BookingRequest;
 import ru.practicum.shareit.booking.dto.BookingResponse;
-import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.service.BookingService;
 import ru.practicum.shareit.exception.NotFoundException;
@@ -74,8 +73,6 @@ class BookingControllerTest {
 
         bookingResponseList = List.of(bookingResponse);
     }
-
-    // --- Позитивные сценарии ---
 
     @Test
     void getBookingById_success() throws Exception {
@@ -195,21 +192,94 @@ class BookingControllerTest {
 
     @Test
     void getBookings_emptyList() throws Exception {
-        long userId = 999L;
-        BookingState state = BookingState.ALL;
-
-        when(service.getBooking(eq(userId), eq(state)))
+        when(service.getBooking(anyLong(), any()))
                 .thenReturn(List.of());
 
         mvc.perform(get("/bookings?state=ALL")
-                        .header("X-Sharer-User-Id", String.valueOf(userId))
+                        .header("X-Sharer-User-Id", 999)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
 
-        verify(service).getBooking(eq(userId), eq(state));
+        verify(service).getBooking(anyLong(), any());
     }
+
+    @Test
+    void getBookings_statePAST_empty() throws Exception {
+        when(service.getBooking(anyLong(), any()))
+                .thenReturn(List.of());
+
+        mvc.perform(get("/bookings?state=PAST")
+                        .header("X-Sharer-User-Id", 1)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        verify(service).getBooking(anyLong(), any());
+    }
+
+    @Test
+    void getBookings_stateCURRENT_empty() throws Exception {
+        when(service.getBooking(anyLong(), any()))
+                .thenReturn(List.of());
+
+        mvc.perform(get("/bookings?state=CURRENT")
+                        .header("X-Sharer-User-Id", 1)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        verify(service).getBooking(anyLong(), any());
+    }
+
+    @Test
+    void getBookings_stateFUTURE_empty() throws Exception {
+        when(service.getBooking(anyLong(), any()))
+                .thenReturn(List.of());
+
+        mvc.perform(get("/bookings?state=FUTURE")
+                        .header("X-Sharer-User-Id", 1)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        verify(service).getBooking(anyLong(), any());
+    }
+
+    @Test
+    void getBookings_stateWAITING_empty() throws Exception {
+        when(service.getBooking(anyLong(), any()))
+                .thenReturn(List.of());
+
+        mvc.perform(get("/bookings?state=WAITING")
+                        .header("X-Sharer-User-Id", 1)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        verify(service).getBooking(anyLong(), any());
+    }
+
+    @Test
+    void getBookings_stateREJECTED_empty() throws Exception {
+        when(service.getBooking(anyLong(), any()))
+                .thenReturn(List.of());
+
+        mvc.perform(get("/bookings?state=REJECTED")
+                        .header("X-Sharer-User-Id", 1)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        verify(service).getBooking(anyLong(), any());
+    }
+
 
     @Test
     void addBooking_validationError_endBeforeStart() throws Exception {

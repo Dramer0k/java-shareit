@@ -72,7 +72,6 @@ class UserControllerTest {
     void addUser_success() throws Exception {
         UserDto created = new UserDto(null, "Alice", "alice@example.com");
         User createdUser = UserMapper.toUser(created);
-        // ID обычно генерируется сервисом
         createdUser.setId(3L);
         created = UserMapper.toDto(createdUser);
 

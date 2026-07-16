@@ -27,8 +27,8 @@ public class UserServiceImpl implements UserService {
         log.info("Создаем пользователя...");
         log.info("Входные данные: {}", user);
 
-        checkEmailUsage(user);
         checkAvailabilityEmail(user);
+        checkEmailUsage(user);
 
         return userRepository.save(user);
     }
@@ -59,6 +59,9 @@ public class UserServiceImpl implements UserService {
 
     private void checkEmailUsage(User user) {
         log.info("Проверка наличия пользователя с Email: {}...", user.getEmail());
+        if (user.getEmail() == null) {
+            return;
+        }
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new AlreadyUsedException("Пользователь с таким имейлом уже существует!");
         }
