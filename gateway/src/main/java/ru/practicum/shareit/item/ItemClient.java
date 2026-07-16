@@ -12,6 +12,11 @@ import ru.practicum.shareit.client.BaseClient;
 import ru.practicum.shareit.item.dto.CommentRequestDto;
 import ru.practicum.shareit.item.dto.ItemRequestDto;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.aspectj.weaver.tools.cache.SimpleCacheFactory.path;
+
 @Service
 public class ItemClient extends BaseClient {
     private static final String API_PREFIX = "/items";
@@ -48,7 +53,9 @@ public class ItemClient extends BaseClient {
     }
 
     public ResponseEntity<Object> searchItems(String text) {
-        return get("/search", text);
+        Map<String, Object> params = new HashMap<>();
+        params.put("text", text);
+        return get(path, null, params);
     }
 
     public ResponseEntity<Object> setComment(Long userId, Long itemId, @Valid CommentRequestDto commentRequest) {
