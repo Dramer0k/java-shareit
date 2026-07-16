@@ -19,7 +19,7 @@ import java.util.List;
 @Slf4j
 @Service
 @AllArgsConstructor
-public class ItemRequestServiceImpl implements ItemRequestService{
+public class ItemRequestServiceImpl implements ItemRequestService {
     private ItemRepository itemRepository;
     private ItemRequestRepository itemRequestRepository;
     private UserRepository userRepository;
