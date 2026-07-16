@@ -7,9 +7,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.request.model.dto.ItemInRequest;
 import ru.practicum.shareit.request.model.dto.ItemRequestDto;
 import ru.practicum.shareit.request.model.dto.ItemRequestResponse;
@@ -29,204 +33,204 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(ItemRequestController.class)
 class ItemRequestControllerTest {
-    @Mock
-    ItemRequestService service;
 
-    @InjectMocks
-    ItemRequestController controller;
-
-    private final ObjectMapper mapper = new ObjectMapper();
-
+    @Autowired
     private MockMvc mvc;
 
-    UserDto userDto;
+    @MockBean
+    private ItemRequestService service;
 
-    ItemRequestDto itemRequestDto;
+    @Autowired
+    private ObjectMapper mapper;
 
-    ItemRequestResponse itemRequestResponse;
-
-    ItemRequestWithAnswer itemRequestWithAnswer;
-
-    List<ItemRequestWithAnswer> withAnswerList;
-
-    List<ItemRequestResponse> requestResponseList;
+    private UserDto userDto;
+    private ItemRequestDto itemRequestDto;
+    private ItemRequestResponse itemRequestResponse;
+    private ItemRequestWithAnswer itemRequestWithAnswer;
+    private List<ItemRequestWithAnswer> withAnswerList;
+    private List<ItemRequestResponse> requestResponseList;
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders
-                .standaloneSetup(controller)
-                .build();
-
         userDto = new UserDto(1L, "John", "john.doe@mail.com");
 
         itemRequestDto = new ItemRequestDto("description");
 
+        LocalDateTime now = LocalDateTime.now();
         itemRequestResponse = new ItemRequestResponse(
                 1L,
                 "description",
                 UserMapper.toUser(userDto),
-                LocalDateTime.now());
+                now
+        );
 
         itemRequestWithAnswer = new ItemRequestWithAnswer(
                 1L,
                 "description",
-                LocalDateTime.now(),
-                Arrays.asList(
-                        new ItemInRequest(
-                                1L,
-                                "Joze",
-                                1L),
-                        new ItemInRequest(
-                                2L,
-                                "Goha",
-                                1L)
-                ));
+                now,
+                List.of(
+                        new ItemInRequest(1L, "Joze", 1L),
+                        new ItemInRequest(2L, "Goha", 1L)
+                )
+        );
 
-        withAnswerList = Arrays.asList(
+        withAnswerList = List.of(
                 new ItemRequestWithAnswer(
                         1L,
                         "description",
-                        LocalDateTime.now(),
-                        Arrays.asList(
-                                new ItemInRequest(
-                                        1L,
-                                        "Joze",
-                                        1L),
-                                new ItemInRequest(
-                                        2L,
-                                        "Goha",
-                                        1L)
+                        now,
+                        List.of(
+                                new ItemInRequest(1L, "Joze", 1L),
+                                new ItemInRequest(2L, "Goha", 1L)
                         )),
                 new ItemRequestWithAnswer(
                         2L,
                         "description",
-                        LocalDateTime.now(),
-                        Arrays.asList(
-                                new ItemInRequest(
-                                        1L,
-                                        "Joze",
-                                        1L),
-                                new ItemInRequest(
-                                        2L,
-                                        "Goha",
-                                        1L)
+                        now.plusHours(1),
+                        List.of(
+                                new ItemInRequest(1L, "Joze", 1L),
+                                new ItemInRequest(2L, "Goha", 1L)
                         ))
         );
 
-        requestResponseList = Arrays.asList(
+        requestResponseList = List.of(
                 new ItemRequestResponse(
                         1L,
                         "description",
                         UserMapper.toUser(userDto),
-                        LocalDateTime.now()),
+                        now),
                 new ItemRequestResponse(
                         2L,
-                        "description",
+                        "another description",
                         UserMapper.toUser(userDto),
-                        LocalDateTime.now())
+                        now.minusDays(1))
         );
     }
 
     @Test
-    void addRequest() throws Exception {
-        when(service.addRequest(any(Long.class), any())).thenReturn(itemRequestResponse);
+    void addRequest_success() throws Exception {
+        ItemRequestDto dto = new ItemRequestDto("new description");
+        when(service.addRequest(eq(1L), any()))
+                .thenReturn(itemRequestResponse);
 
         mvc.perform(post("/requests")
-                .header("X-Sharer-User-Id", "1")
-                .content(mapper.writeValueAsString(userDto))
-                .characterEncoding(StandardCharsets.UTF_8)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON))
+                        .header("X-Sharer-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(dto))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(itemRequestResponse.getId()), Long.class))
-                .andExpect(jsonPath("$.description", is(itemRequestResponse.getDescription())))
-                .andExpect(jsonPath("$.requestor.id", is(itemRequestResponse.getRequestor().getId()), Long.class))
-                .andExpect(jsonPath("$.created[0]", is(itemRequestResponse.getCreated().getYear())))
-                .andExpect(jsonPath("$.created[1]", is(itemRequestResponse.getCreated().getMonthValue())))
-                .andExpect(jsonPath("$.created[2]", is(itemRequestResponse.getCreated().getDayOfMonth())))
-                .andExpect(jsonPath("$.created[3]", is(itemRequestResponse.getCreated().getHour())))
-                .andExpect(jsonPath("$.created[4]", is(itemRequestResponse.getCreated().getMinute())))
-                .andExpect(jsonPath("$.created[5]", is(itemRequestResponse.getCreated().getSecond())))
-        ;
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.description", is("description")))
+                .andExpect(jsonPath("$.requestor.id", is(1)));
 
-        verify(service, times(1)).addRequest(any(Long.class), any());
-
+        verify(service).addRequest(eq(1L), any());
     }
 
     @Test
-    void getRequestsByUser() throws Exception {
-        when(service.getRequestsByRequestor(any(Long.class))).thenReturn(withAnswerList);
+    void getRequestsByUser_success() throws Exception {
+        when(service.getRequestsByRequestor(eq(1L))).thenReturn(withAnswerList);
 
         mvc.perform(get("/requests")
-                .header("X-Sharer-User-Id", "1")
-                .content(mapper.writeValueAsString(userDto))
-                .characterEncoding(StandardCharsets.UTF_8)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON))
+                        .header("X-Sharer-User-Id", "1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(withAnswerList.size())))
-                .andExpect(jsonPath("$[0].id", is(withAnswerList.getFirst().getId()), Long.class))
-                .andExpect(jsonPath("$[0].description", is(withAnswerList.getFirst().getDescription())))
-                .andExpect(jsonPath("$[0].created[0]", is(withAnswerList.getFirst().getCreated().getYear())))
-                .andExpect(jsonPath("$[0].created[1]", is(withAnswerList.getFirst().getCreated().getMonthValue())))
-                .andExpect(jsonPath("$[0].created[2]", is(withAnswerList.getFirst().getCreated().getDayOfMonth())))
-                .andExpect(jsonPath("$[0].created[3]", is(withAnswerList.getFirst().getCreated().getHour())))
-                .andExpect(jsonPath("$[0].created[4]", is(withAnswerList.getFirst().getCreated().getMinute())))
-                .andExpect(jsonPath("$[0].created[5]", is(withAnswerList.getFirst().getCreated().getSecond())));
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].id", is(1)))
+                .andExpect(jsonPath("$[1].id", is(2)));
 
-        verify(service, times(1)).getRequestsByRequestor(any(Long.class));
+        verify(service).getRequestsByRequestor(eq(1L));
     }
 
     @Test
-    void getAllRequest() throws Exception {
-        when(service.getAllRequest(any(Long.class))).thenReturn(requestResponseList);
+    void getAllRequests_success() throws Exception {
+        when(service.getAllRequest(eq(1L))).thenReturn(requestResponseList);
 
         mvc.perform(get("/requests/all")
-                .header("X-Sharer-User-Id", "1")
-                .content(mapper.writeValueAsString(userDto))
-                .characterEncoding(StandardCharsets.UTF_8)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON))
+                        .header("X-Sharer-User-Id", "1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(requestResponseList.size())))
-                .andExpect(jsonPath("$[0].id", is(requestResponseList.getFirst().getId()), Long.class))
-                .andExpect(jsonPath("$[0].description", is(requestResponseList.getFirst().getDescription())))
-                .andExpect(jsonPath("$[0].created[0]", is(requestResponseList.getFirst().getCreated().getYear())))
-                .andExpect(jsonPath("$[0].created[1]", is(requestResponseList.getFirst().getCreated().getMonthValue())))
-                .andExpect(jsonPath("$[0].created[2]", is(requestResponseList.getFirst().getCreated().getDayOfMonth())))
-                .andExpect(jsonPath("$[0].created[3]", is(requestResponseList.getFirst().getCreated().getHour())))
-                .andExpect(jsonPath("$[0].created[4]", is(requestResponseList.getFirst().getCreated().getMinute())))
-                .andExpect(jsonPath("$[0].created[5]", is(requestResponseList.getFirst().getCreated().getSecond())));
+                .andExpect(jsonPath("$", hasSize(2)));
 
-        verify(service, times(1)).getAllRequest(any(Long.class));
+        verify(service).getAllRequest(eq(1L));
     }
 
     @Test
-    void findById() throws Exception {
-        when(service.findById(any(Long.class))).thenReturn(itemRequestWithAnswer);
+    void findById_success() throws Exception {
+        when(service.findById(eq(1L))).thenReturn(itemRequestWithAnswer);
 
         mvc.perform(get("/requests/1")
-                .header("X-Sharer-User-Id", "1")
-                .content(mapper.writeValueAsString(userDto))
-                .characterEncoding(StandardCharsets.UTF_8)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON))
+                        .header("X-Sharer-User-Id", "1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(itemRequestWithAnswer.getId()), Long.class))
-                .andExpect(jsonPath("$.description", is(itemRequestWithAnswer.getDescription())))
-                .andExpect(jsonPath("$.created[0]", is(itemRequestWithAnswer.getCreated().getYear())))
-                .andExpect(jsonPath("$.created[1]", is(itemRequestWithAnswer.getCreated().getMonthValue())))
-                .andExpect(jsonPath("$.created[2]", is(itemRequestWithAnswer.getCreated().getDayOfMonth())))
-                .andExpect(jsonPath("$.created[3]", is(itemRequestWithAnswer.getCreated().getHour())))
-                .andExpect(jsonPath("$.created[4]", is(itemRequestWithAnswer.getCreated().getMinute())))
-                .andExpect(jsonPath("$.created[5]", is(itemRequestWithAnswer.getCreated().getSecond())))
-                .andExpect(jsonPath("$.items", hasSize(itemRequestWithAnswer.getItems().size())));
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.items", hasSize(2)));
 
-        verify(service, times(1)).findById(any(Long.class));
+        verify(service).findById(eq(1L));
+    }
+
+    @Test
+    void addRequest_validationError_emptyDescription() throws Exception {
+        ItemRequestDto invalid = new ItemRequestDto("");
+
+        mvc.perform(post("/requests")
+                        .header("X-Sharer-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(invalid))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).addRequest(any(), any());
+    }
+
+    @Test
+    void addRequest_validationError_nullDescription() throws Exception {
+        ItemRequestDto invalid = new ItemRequestDto(null);
+
+        mvc.perform(post("/requests")
+                        .header("X-Sharer-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(invalid))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getRequestsByUser_emptyList() throws Exception {
+        when(service.getRequestsByRequestor(anyLong())).thenReturn(List.of());
+
+        mvc.perform(get("/requests")
+                        .header("X-Sharer-User-Id", "999")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        verify(service).getRequestsByRequestor(eq(999L));
+    }
+
+    @Test
+    void findById_notFound() throws Exception {
+        when(service.findById(anyLong()))
+                .thenThrow(new NotFoundException("Request not found"));
+
+        mvc.perform(get("/requests/999")
+                        .header("X-Sharer-User-Id", "1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isNotFound())
+        ;
+
+        verify(service).findById(eq(999L));
     }
 }

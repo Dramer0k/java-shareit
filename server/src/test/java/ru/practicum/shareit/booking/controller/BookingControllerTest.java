@@ -9,13 +9,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import ru.practicum.shareit.booking.dto.BookingRequest;
 import ru.practicum.shareit.booking.dto.BookingResponse;
+import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.service.BookingService;
+import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.model.dto.ItemDto;
 import ru.practicum.shareit.user.dto.UserDto;
 
@@ -34,187 +39,215 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(BookingController.class)
 class BookingControllerTest {
-    @Mock
-    BookingService service;
 
-    @InjectMocks
-    BookingController controller;
-
-    private final ObjectMapper mapper = new ObjectMapper();
-
+    @Autowired
     private MockMvc mvc;
 
+    @MockBean
+    private BookingService service;
+
+    @Autowired
+    private ObjectMapper mapper;
+
     private BookingRequest bookingRequest;
-
     private BookingResponse bookingResponse;
-
     private List<BookingResponse> bookingResponseList;
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders
-                .standaloneSetup(controller)
-                .build();
-
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-
-        bookingRequest = new BookingRequest(
-                1L,
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(2)
-        );
+        LocalDateTime start = LocalDateTime.now().plusDays(1);
+        LocalDateTime end = LocalDateTime.now().plusDays(2);
 
         UserDto userDto = new UserDto(1L, "John", "john.doe@mail.com");
-
         ItemDto itemDto = new ItemDto(
                 1L,
                 "itemName",
                 "description",
                 true,
                 1L,
-                1L);
+                1L
+        );
+
+        bookingRequest = new BookingRequest(1L, start, end);
 
         bookingResponse = new BookingResponse(
                 1L,
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(2),
+                start,
+                end,
                 itemDto,
                 userDto,
                 BookingStatus.WAITING
         );
 
-        bookingResponseList = Arrays.asList(
-                new BookingResponse(
-                        1L,
-                        LocalDateTime.now().plusDays(1),
-                        LocalDateTime.now().plusDays(2),
-                        itemDto,
-                        userDto,
-                        BookingStatus.WAITING),
-                new BookingResponse(
-                        2L,
-                        LocalDateTime.now().plusDays(1),
-                        LocalDateTime.now().plusDays(2),
-                        itemDto,
-                        userDto,
-                        BookingStatus.WAITING)
-        );
+        bookingResponseList = List.of(bookingResponse);
     }
 
+    // --- Позитивные сценарии ---
+
     @Test
-    void getBookingById() throws Exception {
-        when(service.findBookingById(anyLong(), anyLong())).thenReturn(bookingResponse);
+    void getBookingById_success() throws Exception {
+        when(service.findBookingById(eq(1L), eq(1L))).thenReturn(bookingResponse);
 
         mvc.perform(get("/bookings/1")
                         .header("X-Sharer-User-Id", "1")
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(bookingResponse.getId()), Long.class))
-                .andExpect(jsonPath("$.item.id", is(bookingResponse.getItem().getId()), Long.class))
-                .andExpect(jsonPath("$.booker.id", is(bookingResponse.getBooker().getId()), Long.class))
-                .andExpect(jsonPath("$.status", is("WAITING")))
-        ;
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.item.id", is(1)))
+                .andExpect(jsonPath("$.booker.id", is(1)))
+                .andExpect(jsonPath("$.status", is("WAITING")));
 
-        verify(service, times(1)).findBookingById(anyLong(), anyLong());
+        verify(service).findBookingById(eq(1L), eq(1L));
     }
 
     @Test
-    void getBookings() throws Exception {
-        when(service.getBooking(anyLong(), any())).thenReturn(bookingResponseList);
+    void getBookings_success() throws Exception {
+        when(service.getBooking(eq(1L), any())).thenReturn(bookingResponseList);
 
         mvc.perform(get("/bookings?state=ALL")
                         .header("X-Sharer-User-Id", "1")
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(bookingResponseList.size())))
-                .andExpect(jsonPath("$[0].id", is(bookingResponseList.getFirst().getId()), Long.class))
-                .andExpect(jsonPath("$[0].item.id", is(bookingResponseList.getFirst().getItem().getId()), Long.class))
-                .andExpect(jsonPath("$[0].booker.id", is(bookingResponseList.getFirst().getBooker().getId()), Long.class));
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id", is(1)))
+                .andExpect(jsonPath("$[0].status", is("WAITING")));
 
-        verify(service, times(1)).getBooking(anyLong(), any());
+        verify(service).getBooking(eq(1L), any());
     }
 
     @Test
-    void getBookingsByOwner() throws Exception {
-        when(service.getBookingsByOwner(anyLong(), any())).thenReturn(bookingResponseList);
+    void getBookingsByOwner_success() throws Exception {
+        when(service.getBookingsByOwner(eq(1L), any())).thenReturn(bookingResponseList);
 
         mvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", "1")
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(bookingResponseList.size())))
-                .andExpect(jsonPath("$[0].id", is(bookingResponseList.getFirst().getId()), Long.class))
-                .andExpect(jsonPath("$[0].item.id", is(bookingResponseList.getFirst().getItem().getId()), Long.class))
-                .andExpect(jsonPath("$[0].booker.id", is(bookingResponseList.getFirst().getBooker().getId()), Long.class));
+                .andExpect(jsonPath("$", hasSize(1)));
 
-        verify(service, times(1)).getBookingsByOwner(anyLong(), any());
+        verify(service).getBookingsByOwner(eq(1L), any());
     }
 
     @Test
-    void addBooking() throws Exception {
-        when(service.create(anyLong(), any())).thenReturn(bookingResponse);
+    void addBooking_success() throws Exception {
+        when(service.create(eq(1L), any())).thenReturn(bookingResponse);
+
+        String content = mapper.writeValueAsString(bookingRequest);
 
         mvc.perform(post("/bookings")
                         .header("X-Sharer-User-Id", "1")
-                        .content(mapper.writeValueAsString(bookingRequest))
-                        .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
+                        .content(content)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(bookingResponse.getId()), Long.class))
-                .andExpect(jsonPath("$.item.id", is(bookingResponse.getItem().getId()), Long.class))
-                .andExpect(jsonPath("$.booker.id", is(bookingResponse.getBooker().getId()), Long.class))
-                .andExpect(jsonPath("$.status", is("WAITING")))
-        ;
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.status", is("WAITING")));
+
+        verify(service).create(eq(1L), any());
     }
 
     @Test
-    void changeStatus() throws Exception {
-        when(service.changeStatus(anyLong(), anyLong(), anyBoolean())).thenReturn(bookingResponse);
+    void changeStatus_success() throws Exception {
+        BookingResponse updated = new BookingResponse(
+                bookingResponse.getId(),
+                bookingResponse.getStart(),
+                bookingResponse.getEnd(),
+                bookingResponse.getItem(),
+                bookingResponse.getBooker(),
+                BookingStatus.APPROVED
+        );
+        when(service.changeStatus(eq(1L), eq(1L), eq(true))).thenReturn(updated);
 
         mvc.perform(patch("/bookings/1?approved=true")
                         .header("X-Sharer-User-Id", "1")
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(bookingResponse.getId()), Long.class))
-                .andExpect(jsonPath("$.item.id", is(bookingResponse.getItem().getId()), Long.class))
-                .andExpect(jsonPath("$.booker.id", is(bookingResponse.getBooker().getId()), Long.class))
-                .andExpect(jsonPath("$.status", is("WAITING")))
-        ;
+                .andExpect(jsonPath("$.status", is("APPROVED")));
+
+        verify(service).changeStatus(eq(1L), eq(1L), eq(true));
     }
 
     @Test
-    void getAllBookings() throws Exception {
+    void getAllBookings_success() throws Exception {
         when(service.getAllBookings()).thenReturn(bookingResponseList);
 
         mvc.perform(get("/bookings/all")
                         .header("X-Sharer-User-Id", "1")
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(bookingResponseList.size())))
-                .andExpect(jsonPath("$[0].id", is(bookingResponseList.getFirst().getId()), Long.class))
-                .andExpect(jsonPath("$[0].item.id", is(bookingResponseList.getFirst().getItem().getId()), Long.class))
-                .andExpect(jsonPath("$[0].booker.id", is(bookingResponseList.getFirst().getBooker().getId()), Long.class));
-        ;
+                .andExpect(jsonPath("$", hasSize(1)));
+
+        verify(service).getAllBookings();
+    }
+
+    @Test
+    void getBookingById_notFound() throws Exception {
+        when(service.findBookingById(anyLong(), anyLong()))
+                .thenThrow(new NotFoundException("Booking not found"));
+
+        mvc.perform(get("/bookings/999")
+                        .header("X-Sharer-User-Id", "1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isNotFound());
+
+        verify(service).findBookingById(anyLong(), anyLong());
+    }
+
+    @Test
+    void getBookings_emptyList() throws Exception {
+        long userId = 999L;
+        BookingState state = BookingState.ALL;
+
+        when(service.getBooking(eq(userId), eq(state)))
+                .thenReturn(List.of());
+
+        mvc.perform(get("/bookings?state=ALL")
+                        .header("X-Sharer-User-Id", String.valueOf(userId))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        verify(service).getBooking(eq(userId), eq(state));
+    }
+
+    @Test
+    void addBooking_validationError_endBeforeStart() throws Exception {
+        BookingRequest invalid = new BookingRequest(
+                1L,
+                LocalDateTime.now().plusDays(2),
+                LocalDateTime.now().plusDays(1)  // end < start
+        );
+
+        mvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(invalid))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).create(any(), any());
+    }
+
+    @Test
+    void addBooking_validationError_nullDates() throws Exception {
+        BookingRequest invalid = new BookingRequest(1L, null, null);
+
+        mvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(invalid))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 }

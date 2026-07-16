@@ -86,6 +86,5 @@ public class ItemController {
             ) {
         log.info("POST /items/{itemId}/comment");
         return itemService.setComment(userId, itemId, commentRequest);
-
     }
 }

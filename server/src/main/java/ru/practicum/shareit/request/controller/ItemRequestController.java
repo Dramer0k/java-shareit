@@ -1,7 +1,9 @@
 package ru.practicum.shareit.request.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.request.model.dto.ItemRequestDto;
 import ru.practicum.shareit.request.model.dto.ItemRequestResponse;
@@ -21,7 +23,7 @@ public class ItemRequestController {
     @PostMapping
     public ItemRequestResponse addRequest(
             @RequestHeader(USER_ID) Long userId,
-            @RequestBody ItemRequestDto itemRequestDto
+            @RequestBody @Valid ItemRequestDto itemRequestDto
             ) {
         log.info("POST /requests");
         return itemRequestService.addRequest(userId, itemRequestDto);
