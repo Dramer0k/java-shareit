@@ -24,7 +24,7 @@ public class UserClient extends BaseClient {
                         .build()
         );
     }
-    
+
     public ResponseEntity<Object> getUser() {
         return get("");
     }
