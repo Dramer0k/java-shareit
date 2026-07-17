@@ -4,8 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
+import ru.practicum.shareit.request.model.dto.ItemInRequest;
 import ru.practicum.shareit.request.model.dto.ItemRequestDto;
 import ru.practicum.shareit.request.model.dto.ItemRequestResponse;
 import ru.practicum.shareit.request.model.dto.ItemRequestWithAnswer;
@@ -37,15 +39,19 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     public List<ItemRequestWithAnswer> getRequestsByRequestor(Long userId) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь не найден!"));
-
-        log.info("User_Id: {}", userId);
-
         List<ItemRequest> requests = itemRequestRepository.findByRequestorIdOrderByCreatedDesc(userId);
 
-        log.info("Request_list: {}", requests);
+        List<Long> requestIds = requests.stream()
+                .map(ItemRequest::getId)
+                .toList();
+
+        List<Item> allItems = itemRepository.findAllByRequestIdIn(requestIds);
+
+        List<ItemInRequest> itemInRequestList = allItems.stream().map(ItemRequestMapper::toItemInRequest).toList();
 
         return requests.stream()
-                .map(itemRequest -> ItemRequestMapper.toRequestWithAnswer(itemRequest, itemRepository))
+                .map(itemRequest ->
+                        ItemRequestMapper.toRequestWithAnswer(itemRequest, itemInRequestList))
                 .toList();
     }
 
@@ -66,6 +72,10 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     public ItemRequestWithAnswer findById(Long requestId) {
         ItemRequest itemInRequest = itemRequestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Запрос не найден!"));
-        return ItemRequestMapper.toRequestWithAnswer(itemInRequest, itemRepository);
+
+        List<Item> itemList = itemRepository.findAllByRequestId(itemInRequest.getId());
+        List<ItemInRequest> itemInRequestList = itemList.stream().map(ItemRequestMapper::toItemInRequest).toList();
+
+        return ItemRequestMapper.toRequestWithAnswer(itemInRequest, itemInRequestList);
     }
 }

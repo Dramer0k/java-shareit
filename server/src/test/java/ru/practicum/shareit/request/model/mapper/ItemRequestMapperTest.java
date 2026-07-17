@@ -95,7 +95,10 @@ class ItemRequestMapperTest {
 
         when(itemRepository.findAllByRequestId(requestId)).thenReturn(List.of());
 
-        ItemRequestWithAnswer result = ItemRequestMapper.toRequestWithAnswer(request, itemRepository);
+        List<Item> itemList = itemRepository.findAllByRequestId(request.getId());
+        List<ItemInRequest> itemInRequestList = itemList.stream().map(ItemRequestMapper::toItemInRequest).toList();
+
+        ItemRequestWithAnswer result = ItemRequestMapper.toRequestWithAnswer(request, itemInRequestList);
 
         assertThat(result.getId()).isEqualTo(requestId);
         assertThat(result.getDescription()).isEqualTo(description);
@@ -134,7 +137,10 @@ class ItemRequestMapperTest {
         List<Item> items = List.of(item1, item2);
         when(itemRepository.findAllByRequestId(requestId)).thenReturn(items);
 
-        ItemRequestWithAnswer result = ItemRequestMapper.toRequestWithAnswer(request, itemRepository);
+        List<Item> itemList = itemRepository.findAllByRequestId(request.getId());
+        List<ItemInRequest> itemInRequestList = itemList.stream().map(ItemRequestMapper::toItemInRequest).toList();
+
+        ItemRequestWithAnswer result = ItemRequestMapper.toRequestWithAnswer(request, itemInRequestList);
 
         assertThat(result.getId()).isEqualTo(requestId);
         assertThat(result.getDescription()).isEqualTo(description);

@@ -2,7 +2,6 @@ package ru.practicum.shareit.request.model.mapper;
 
 import lombok.extern.slf4j.Slf4j;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.request.model.dto.ItemInRequest;
 import ru.practicum.shareit.request.model.dto.ItemRequestDto;
@@ -33,15 +32,12 @@ public class ItemRequestMapper {
         );
     }
 
-    public static ItemRequestWithAnswer toRequestWithAnswer(ItemRequest itemRequest, ItemRepository itemRepository) {
+    public static ItemRequestWithAnswer toRequestWithAnswer(ItemRequest itemRequest, List<ItemInRequest> itemList) {
         ItemRequestWithAnswer request = new ItemRequestWithAnswer();
         request.setId(itemRequest.getId());
         request.setDescription(itemRequest.getDescription());
         request.setCreated(itemRequest.getCreated());
-
-        List<Item> itemList = itemRepository.findAllByRequestId(itemRequest.getId());
-
-        request.setItems(itemList.stream().map(ItemRequestMapper::toItemInRequest).toList());
+        request.setItems(itemList);
 
         return request;
     }

@@ -106,13 +106,13 @@ class ItemRequestServiceImplTest {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(itemRequestRepository.findByRequestorIdOrderByCreatedDesc(USER_ID)).thenReturn(requests);
 
-        when(itemRepository.findAllByRequestId(anyLong())).thenReturn(List.of());
+        when(itemRepository.findAllByRequestIdIn(any())).thenReturn(List.of());
 
         List<ItemRequestWithAnswer> result = itemRequestService.getRequestsByRequestor(USER_ID);
 
         verify(userRepository).findById(USER_ID);
         verify(itemRequestRepository).findByRequestorIdOrderByCreatedDesc(USER_ID);
-        verify(itemRepository, times(2)).findAllByRequestId(anyLong()); // по одному вызову на каждый запрос
+        verify(itemRepository, times(1)).findAllByRequestIdIn(any());
 
         assertEquals(2, result.size());
         assertEquals("Request 2", result.get(0).getDescription());
